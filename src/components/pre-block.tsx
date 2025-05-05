@@ -17,6 +17,7 @@ import { Clipboard, CheckIcon } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
 import dynamic from "next/dynamic";
+import { KrokiClient } from "@/lib/diagram-renderer";
 
 const PurePre = ({
   children,
@@ -82,6 +83,7 @@ export function PreBlock({ children }: { children: any }) {
   const language = children.props.className?.split("-")?.[1] || "bash";
   const [loading, setLoading] = useState(true);
   const isMermaid = language === "mermaid";
+  const isKrokiDiagram = KrokiClient.isValidDiagramType(language);
 
   // For Mermaid diagrams, we use a dedicated component
   if (isMermaid) {
@@ -99,6 +101,24 @@ export function PreBlock({ children }: { children: any }) {
     });
     
     return <MermaidDiagram chart={code} />;
+  }
+  
+  // For Kroki-supported diagrams (PlantUML, Graphviz, etc.)
+  if (isKrokiDiagram) {
+    const KrokiDiagram = dynamic(() => import("./kroki-diagram").then(mod => mod.KrokiDiagram), {
+      loading: () => (
+        <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+          <PurePre className="animate-pulse" code={code} lang={language}>
+            <div className="h-20 w-full flex items-center justify-center">
+              <span className="text-muted-foreground">Loading {language} diagram...</span>
+            </div>
+          </PurePre>
+        </div>
+      ),
+      ssr: false
+    });
+    
+    return <KrokiDiagram chart={code} type={language as any} />;
   }
 
   const [component, setComponent] = useState<JSX.Element | null>(
