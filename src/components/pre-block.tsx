@@ -1,11 +1,7 @@
 "use client";
 
 import type { JSX } from "react";
-import {
-  bundledLanguages,
-  codeToHast,
-  type BundledLanguage,
-} from "shiki/bundle/web";
+import { bundledLanguages, codeToHast, type BundledLanguage } from "shiki/bundle/web";
 import { Fragment, useLayoutEffect, useState } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
@@ -24,7 +20,12 @@ const PurePre = ({
   className,
   code,
   lang,
-}: { children: any; className?: string; code: string; lang: string }) => {
+}: {
+  children: any;
+  className?: string;
+  code: string;
+  lang: string;
+}) => {
   const { copied, copy } = useCopy();
 
   return (
@@ -47,11 +48,7 @@ const PurePre = ({
   );
 };
 
-export async function highlight(
-  code: string,
-  lang: BundledLanguage,
-  theme: string,
-) {
+export async function highlight(code: string, lang: BundledLanguage, theme: string) {
   const parsed: BundledLanguage = bundledLanguages[lang] ? lang : "md";
 
   if (lang === "json") {
@@ -81,13 +78,15 @@ export function PreBlock({ children }: { children: any }) {
   const code = children.props.children;
   const { theme } = useTheme();
   const language = children.props.className?.split("-")?.[1] || "bash";
-  const [loading, setLoading] = useState(true);
+
+  // Define all possible rendering modes
   const isMermaid = language === "mermaid";
   const isKrokiDiagram = KrokiClient.isValidDiagramType(language);
 
-  // For Mermaid diagrams, we use a dedicated component
-  if (isMermaid) {
-    const MermaidDiagram = dynamic(() => import("./mermaid-diagram").then(mod => mod.MermaidDiagram), {
+  // For specialized diagrams, use dynamic imports
+  const MermaidDiagram = dynamic(
+    () => import("./mermaid-diagram").then((mod) => mod.MermaidDiagram),
+    {
       loading: () => (
         <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
           <PurePre className="animate-pulse" code={code} lang={language}>
@@ -97,15 +96,13 @@ export function PreBlock({ children }: { children: any }) {
           </PurePre>
         </div>
       ),
-      ssr: false
-    });
-    
-    return <MermaidDiagram chart={code} />;
-  }
-  
-  // For Kroki-supported diagrams (PlantUML, Graphviz, etc.)
-  if (isKrokiDiagram) {
-    const KrokiDiagram = dynamic(() => import("./kroki-diagram").then(mod => mod.KrokiDiagram), {
+      ssr: false,
+    },
+  );
+
+  const KrokiDiagram = dynamic(
+    () => import("./kroki-diagram").then((mod) => mod.KrokiDiagram),
+    {
       loading: () => (
         <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
           <PurePre className="animate-pulse" code={code} lang={language}>
@@ -115,29 +112,40 @@ export function PreBlock({ children }: { children: any }) {
           </PurePre>
         </div>
       ),
-      ssr: false
-    });
-    
-    return <KrokiDiagram chart={code} type={language as any} />;
-  }
+      ssr: false,
+    },
+  );
 
+  // For regular code, use highlight
+  const [loading, setLoading] = useState(true);
   const [component, setComponent] = useState<JSX.Element | null>(
     <PurePre className="animate-pulse" code={code} lang={language}>
       {children}
     </PurePre>,
   );
+
   useLayoutEffect(() => {
-    safe()
-      .map(() =>
-        highlight(
-          code,
-          language,
-          theme == "dark" ? "dark-plus" : "github-light",
-        ),
-      )
-      .ifOk(setComponent)
-      .watch(setLoading.bind(null, false));
-  }, [theme, language, code]);
+    // Only apply highlighting if not a special diagram type
+    if (!isMermaid && !isKrokiDiagram) {
+      safe()
+        .map(() =>
+          highlight(code, language, theme == "dark" ? "dark-plus" : "github-light"),
+        )
+        .ifOk(setComponent)
+        .watch(setLoading.bind(null, false));
+    }
+  }, [theme, language, code, isMermaid, isKrokiDiagram]);
+
+  // Render the appropriate component based on the language
+  if (isMermaid) {
+    return <MermaidDiagram chart={code} />;
+  }
+
+  if (isKrokiDiagram) {
+    return <KrokiDiagram chart={code} type={language as any} />;
+  }
+
+  // Default case: syntax highlighted code
   return (
     <div
       className={cn(
