@@ -13,7 +13,8 @@ import JsonView from "./ui/json-view";
 import { toast } from "sonner";
 import { safe, watchOk } from "ts-safe";
 import { useRouter } from "next/navigation";
-import { createDebounce, isNull, safeJSONParse } from "lib/utils";
+import { createDebounce, isNull } from "lib/utils";
+import { parseJSON5 } from "lib/json5-utils";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { mutate } from "swr";
 import { Loader } from "lucide-react";
@@ -144,7 +145,7 @@ export default function MCPEditor({
 
   const handleConfigChange = (data: string) => {
     setJsonString(data);
-    const result = safeJSONParse(data);
+    const result = parseJSON5(data);
     errorDebounce.clear();
     if (result.success) {
       const isDiff = !equal(result.value, config);
