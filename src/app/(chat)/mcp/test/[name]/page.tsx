@@ -35,7 +35,8 @@ import { Button } from "ui/button";
 import { Textarea } from "ui/textarea";
 import JsonView from "@/components/ui/json-view";
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
-import { safeJSONParse, isNull, isString } from "lib/utils";
+import { isNull, isString } from "lib/utils";
+import { parseJSON5 } from "lib/json5-utils";
 import {
   Dialog,
   DialogClose,
@@ -357,6 +358,7 @@ const GenerateExampleInputJsonDialog = ({
               "Generate"
             )}
           </Button>
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -411,7 +413,7 @@ export default function Page() {
       return;
     }
 
-    const result = safeJSONParse(data);
+    const result = parseJSON5(data);
     if (!result.success) {
       setJsonError(
         (result.error as Error)?.message ??
@@ -425,7 +427,7 @@ export default function Page() {
   const handleToolCall = async () => {
     if (!selectedTool) return;
 
-    const parsedInput = safeJSONParse(jsonInput || "{}");
+    const parsedInput = parseJSON5(jsonInput || "{}");
     if (!parsedInput.success)
       return handleErrorWithToast(parsedInput.error as Error);
 

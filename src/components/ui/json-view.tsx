@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, memo } from "react";
-
+import { tryParseJSON5 } from "lib/json5-utils";
 import clsx from "clsx";
 
 interface JsonViewProps {
@@ -18,11 +18,7 @@ function tryParseJson(str: string): { success: boolean; data: JsonValue } {
   ) {
     return { success: false, data: str };
   }
-  try {
-    return { success: true, data: JSON.parse(str) };
-  } catch {
-    return { success: false, data: str };
-  }
+  return tryParseJSON5<JsonValue>(str);
 }
 
 const JsonView = memo(

@@ -54,11 +54,14 @@ export const isNull = (value: any): value is null | undefined => value == null;
 export const isPromiseLike = (x: unknown): x is PromiseLike<unknown> =>
   isFunction((x as any)?.then);
 
+import JSON5 from "json5";
+
 export const isJson = (value: any): value is Record<string, any> => {
   try {
     if (typeof value === "string") {
       const str = value.trim();
-      JSON.parse(str);
+      // Use JSON5 for more tolerant parsing
+      JSON5.parse(str);
       return true;
     } else if (isObject(value)) {
       return true;
@@ -143,6 +146,8 @@ export class Locker {
   }
 }
 
+import { parseJSON5 } from "./json5-utils";
+
 export function safeJSONParse<T = unknown>(
   json: string,
 ):
@@ -156,18 +161,8 @@ export function safeJSONParse<T = unknown>(
       error: unknown;
       value?: T;
     } {
-  try {
-    const parsed = JSON.parse(json);
-    return {
-      success: true,
-      value: parsed,
-    };
-  } catch (e) {
-    return {
-      success: false,
-      error: e,
-    };
-  }
+  // This will use JSON5 parser internally for more tolerance
+  return parseJSON5<T>(json);
 }
 
 export function generateUUID(): string {
