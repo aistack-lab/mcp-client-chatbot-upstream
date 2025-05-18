@@ -1,13 +1,15 @@
 "use client";
 
-import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
-import { ReactNode, useCallback, useMemo, useState } from "react";
+import { ChevronDown, CornerRightUp, Paperclip, Pause, Mic, MicOff, Loader2 } from "lucide-react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
+import { toast } from "sonner";
 import { PastesContentCard } from "./pasts-content";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { SelectModel } from "./select-model";
 import { appStore } from "@/app/store";
+import { VoiceRecordingIndicator } from "./voice-recording-indicator";
 import { useShallow } from "zustand/shallow";
 import { customModelProvider } from "lib/ai/models";
 import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
@@ -16,13 +18,14 @@ import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 interface PromptInputProps {
   placeholder?: string;
-  setInput: (value: string) => void;
+  setInputAction: (value: string) => void;
   input: string;
-  onStop: () => void;
-  append: UseChatHelpers["append"];
+  onStopAction: () => void;
+  appendAction: UseChatHelpers["append"];
   toolDisabled?: boolean;
   isLoading?: boolean;
   model?: string;
@@ -38,12 +41,12 @@ const MentionInput = dynamic(() => import("./mention-input"), {
 
 export default function PromptInput({
   placeholder = "What do you want to know?",
-  append,
+  appendAction,
   model,
   setModel,
   input,
-  setInput,
-  onStop,
+  setInputAction,
+  onStopAction,
   isLoading,
   toolDisabled,
 }: PromptInputProps) {
@@ -75,6 +78,30 @@ export default function PromptInput({
   }, []);
 
   const [pastedContents, setPastedContents] = useState<string[]>([]);
+  const { 
+    isRecording,
+    isTranscribing,
+    isSupported: isVoiceSupported,
+    startRecording,
+    stopRecording,
+    cancelRecording
+  } = useVoiceInput({
+    maxDuration: 60,
+    onTranscriptionComplete: (text) => {
+      setInputAction(text);
+      toast.success("Voice input captured successfully!");
+    },
+    onError: (_, message) => {
+      toast.error(message || "An error occurred with voice recording");
+    },
+  });
+  
+  // Use client-side state to avoid hydration mismatch
+  const [showVoiceButton, setShowVoiceButton] = useState(false);
+  
+  useEffect(() => {
+    setShowVoiceButton(isVoiceSupported);
+  }, [isVoiceSupported]);
 
   const toolList = useMemo(() => {
     return (
@@ -127,8 +154,8 @@ export default function PromptInput({
     }
     setPastedContents([]);
     setToolMentionItems([]);
-    setInput("");
-    append!({
+    setInputAction("");
+    appendAction!({
       role: "user",
       content: "",
       annotations,
@@ -142,6 +169,20 @@ export default function PromptInput({
     });
   };
 
+  const handleMicrophoneClick = async () => {
+    if (isTranscribing) {
+      return; // Don't do anything if currently transcribing
+    }
+    
+    if (isRecording) {
+      stopRecording();
+    } else {
+      if (await startRecording()) {
+        toast.success("Recording started. Click mic icon again to stop.");
+      }
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto fade-in animate-in">
       <div className="z-10 mx-auto w-full max-w-3xl relative">
@@ -151,7 +192,7 @@ export default function PromptInput({
               <div className="relative min-h-[2rem]">
                 <MentionInput
                   input={input}
-                  onChange={setInput}
+                  onChange={setInputAction}
                   onChangeMention={setToolMentionItems}
                   onEnter={submit}
                   placeholder={placeholder}
@@ -180,6 +221,17 @@ export default function PromptInput({
                     }}
                   />
                 ))}
+                {isRecording && (
+                  <VoiceRecordingIndicator 
+                    isRecording={isRecording} 
+                    duration={60}
+                    onMaxDurationReached={stopRecording}
+                    onCancel={() => {
+                      cancelRecording();
+                      toast.info("Recording cancelled");
+                    }}
+                  />
+                )}
               </div>
               <div className="flex w-full items-center z-30 gap-1.5">
                 <div
@@ -188,6 +240,28 @@ export default function PromptInput({
                 >
                   <Paperclip className="size-4" />
                 </div>
+                
+                {showVoiceButton && (
+                  <div
+                    className={`cursor-pointer text-muted-foreground border rounded-full p-2 transition-all duration-200 ${
+                      isRecording 
+                        ? 'bg-red-500/10 border-red-500' 
+                        : isTranscribing 
+                        ? 'bg-amber-500/10 border-amber-500' 
+                        : 'bg-transparent hover:bg-muted'
+                    }`}
+                    onClick={handleMicrophoneClick}
+                    title={isRecording ? "Stop recording" : isTranscribing ? "Transcribing..." : "Start voice input"}
+                  >
+                    {isTranscribing ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : isRecording ? (
+                      <MicOff className="size-4 text-red-500" />
+                    ) : (
+                      <Mic className="size-4" />
+                    )}
+                  </div>
+                )}
 
                 {!toolDisabled && (
                   <>
@@ -212,7 +286,7 @@ export default function PromptInput({
                 <div
                   onClick={() => {
                     if (isLoading) {
-                      onStop();
+                      onStopAction();
                     } else {
                       submit();
                     }

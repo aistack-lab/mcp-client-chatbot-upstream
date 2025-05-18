@@ -150,10 +150,10 @@ export default function ProjectPage() {
 
         <PromptInput
           input={input}
-          append={append}
-          setInput={setInput}
+          appendAction={append}
+          setInputAction={setInput}
           isLoading={isLoading}
-          onStop={stop}
+          onStopAction={stop}
         />
         <div className="flex my-4 mx-2 gap-4">
           <FeatureCard

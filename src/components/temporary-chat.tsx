@@ -251,16 +251,16 @@ function DrawerTemporaryContent({
       <div className={"w-full my-6 mt-auto"}>
         <PromptInput
           input={input}
-          append={append}
+          appendAction={append}
           model={temporaryModel}
           setModel={(model) => {
             appStoreMutate({ temporaryModel: model });
           }}
           toolDisabled
           placeholder="Feel free to ask anything temporarily"
-          setInput={setInput}
+          setInputAction={setInput}
           isLoading={isLoading}
-          onStop={stop}
+          onStopAction={stop}
         />
       </div>
     </div>

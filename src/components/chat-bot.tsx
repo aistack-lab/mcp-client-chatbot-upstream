@@ -245,10 +245,10 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       <div className={clsx(messages.length && "absolute bottom-14", "w-full")}>
         <PromptInput
           input={input}
-          append={append}
-          setInput={setInput}
+          appendAction={append}
+          setInputAction={setInput}
           isLoading={isLoading || isPendingToolCall}
-          onStop={stop}
+          onStopAction={stop}
         />
         {slots?.inputBottomSlot}
       </div>
