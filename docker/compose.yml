@@ -4,9 +4,10 @@ services:
       context: ..
       dockerfile: ./docker/Dockerfile
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NO_HTTPS=1
+      - NEXT_PUBLIC_KROKI_URL=http://core:8000
     env_file:
       - ../.env
     dns:
@@ -15,20 +16,66 @@ services:
     networks:
       - mcp_client_network
     depends_on:
-      - postgres
+      - core
+    #   - postgres
     restart: unless-stopped
 
-  postgres:
-    image: postgres:17
+  # postgres:
+  #   image: postgres:17
+  #   environment:
+  #     POSTGRES_DB: your_database_name
+  #     POSTGRES_USER: your_username
+  #     POSTGRES_PASSWORD: your_password
+  #   networks:
+  #     - mcp_client_network
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+  core:
+    image: yuzutech/kroki
     environment:
-      POSTGRES_DB: your_database_name
-      POSTGRES_USER: your_username
-      POSTGRES_PASSWORD: your_password
+      - KROKI_MERMAID_HOST=mermaid
+      - KROKI_BPMN_HOST=bpmn
+      - KROKI_EXCALIDRAW_HOST=excalidraw
+    ports:
+      - "8000:8000"
     networks:
       - mcp_client_network
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    depends_on:
+      - mermaid
+      - bpmn
+      - excalidraw
+      - diagramsnet
+
+  mermaid:
+    image: yuzutech/kroki-mermaid
+    expose:
+      - "8002"
+    networks:
+      - mcp_client_network
+
+  bpmn:
+    image: yuzutech/kroki-bpmn
+    expose:
+      - "8003"
+    networks:
+      - mcp_client_network
+
+  excalidraw:
+    image: yuzutech/kroki-excalidraw
+    expose:
+      - "8004"
+    networks:
+      - mcp_client_network
+
+  # experimental!
+  diagramsnet:
+    image: yuzutech/kroki-diagramsnet
+    expose:
+      - "8005"
+    networks:
+      - mcp_client_network
 
 volumes:
   postgres_data:

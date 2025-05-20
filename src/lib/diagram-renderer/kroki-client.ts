@@ -2,7 +2,9 @@ import axios from "axios";
 import * as pako from "pako";
 import { KrokiOptions } from "./types";
 
-const KROKI_BASE_URL = "https://kroki.io";
+// Use localhost:8000 for the local Kroki instance
+// Can be overridden by environment variable NEXT_PUBLIC_KROKI_URL
+const KROKI_BASE_URL = process.env.NEXT_PUBLIC_KROKI_URL || "http://localhost:8000";
 
 export class KrokiClient {
   /**
