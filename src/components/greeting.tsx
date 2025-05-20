@@ -26,6 +26,16 @@ export const Greeting = () => {
       transition={{ delay: 0.3 }}
     >
       <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
+        <div className="flex justify-center mb-4">
+          <motion.img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="h-40 w-auto invert dark:invert-0 filter drop-shadow-md" 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
         <h1 className="text-4xl font-semibold">
           {greeting}, {user?.name}
         </h1>

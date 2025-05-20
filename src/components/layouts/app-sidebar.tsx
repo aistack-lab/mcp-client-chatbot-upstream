@@ -51,7 +51,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <Link href="/">
                 <MCPIcon className="size-4 fill-foreground" />
-                <h4 className="font-bold">mcp/chat-bot</h4>
+                <h4 className="font-bold">aistack/chat-bot</h4>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
