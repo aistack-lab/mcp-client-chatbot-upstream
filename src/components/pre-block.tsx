@@ -15,6 +15,26 @@ import { useCopy } from "@/hooks/use-copy";
 import dynamic from "next/dynamic";
 import { DiagramType } from "@/lib/diagram-renderer";
 
+// Dynamically import TemplateRenderer component
+const TemplateRenderer = dynamic(
+  () => import("./template-renderer").then((mod) => mod.TemplateRenderer),
+  {
+    loading: () => (
+      <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+        <div className="w-full flex z-20 py-2 px-4 items-center">
+          <span className="text-sm text-muted-foreground">liquid</span>
+        </div>
+        <div className="relative overflow-x-auto px-6 pb-6">
+          <div className="h-20 w-full flex items-center justify-center">
+            <span className="text-muted-foreground">Processing Liquid template...</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
 // Dynamically import MermaidDiagram component
 const MermaidDiagram = dynamic(
   () => import("./mermaid-diagram").then((mod) => mod.MermaidDiagram),
@@ -135,6 +155,10 @@ export async function highlight(
   
   if (lang === "svg") {
     return <SVGRenderer svgContent={code} />;
+  }
+  
+  if (lang === "liquid") {
+    return <TemplateRenderer template={code} />;
   }
 
   // Support for all Kroki diagram types

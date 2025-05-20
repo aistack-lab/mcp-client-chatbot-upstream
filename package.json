@@ -80,6 +80,7 @@
     "json5": "^2.2.3",
     "katex": "^0.16.22",
     "leaflet": "^1.9.4",
+    "liquidjs": "^10.21.1",
     "lucide-react": "^0.486.0",
     "mermaid": "^11.6.0",
     "nanoid": "^5.1.5",

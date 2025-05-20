@@ -75,6 +75,7 @@ packetdiag, rackdiag, umlet, graphviz, dot, erd, svgbob, symbolator,
 nomnoml, vega, vegalite, wavedrom, bpmn, bytefield, excalidraw, pikchr,
 structurizr, diagramsnet, d2, tikz, dbml, wireviz
 
+You can also use liquid template language in a \`\`\`template code block.
 </response_style>`.trim();
 
   return prompt.trim();
