@@ -35,6 +35,26 @@ const MermaidDiagram = dynamic(
   },
 );
 
+// Dynamically import SVGRenderer component
+const SVGRenderer = dynamic(
+  () => import("./svg-renderer").then((mod) => mod.SVGRenderer),
+  {
+    loading: () => (
+      <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+        <div className="w-full flex z-20 py-2 px-4 items-center">
+          <span className="text-sm text-muted-foreground">svg</span>
+        </div>
+        <div className="relative overflow-x-auto px-6 pb-6">
+          <div className="h-20 w-full flex items-center justify-center">
+            <span className="text-muted-foreground">Loading SVG renderer...</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
 // Dynamically import KrokiDiagram component
 const KrokiDiagram = dynamic(
   () => import("./kroki-diagram").then((mod) => mod.KrokiDiagram),
@@ -111,6 +131,10 @@ export async function highlight(
         <MermaidDiagram chart={code} />
       </PurePre>
     );
+  }
+  
+  if (lang === "svg") {
+    return <SVGRenderer svgContent={code} />;
   }
 
   // Support for all Kroki diagram types
