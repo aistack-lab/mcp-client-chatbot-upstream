@@ -9,7 +9,8 @@ services:
       - NO_HTTPS=1
       - NEXT_PUBLIC_KROKI_URL=http://core:8000
     env_file:
-      - ../.env
+      - ../.env # root .env
+      - .env # docker .env
     dns:
       - 8.8.8.8 # Google's public DNS server
       - 8.8.4.4 # Google's public DNS server
@@ -23,9 +24,8 @@ services:
   # postgres:
   #   image: postgres:17
   #   environment:
-  #     POSTGRES_DB: your_database_name
-  #     POSTGRES_USER: your_username
-  #     POSTGRES_PASSWORD: your_password
+  #   env_file:
+  #     - .env # docker .env
   #   networks:
   #     - mcp_client_network
   #   volumes:
