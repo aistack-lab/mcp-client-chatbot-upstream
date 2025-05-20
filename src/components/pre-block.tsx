@@ -13,6 +13,7 @@ import { Clipboard, CheckIcon } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
 import dynamic from "next/dynamic";
+import { DiagramType } from "@/lib/diagram-renderer";
 
 // Dynamically import MermaidDiagram component
 const MermaidDiagram = dynamic(
@@ -26,6 +27,26 @@ const MermaidDiagram = dynamic(
         <div className="relative overflow-x-auto px-6 pb-6">
           <div className="h-20 w-full flex items-center justify-center">
             <span className="text-muted-foreground">Loading Mermaid renderer...</span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+// Dynamically import KrokiDiagram component
+const KrokiDiagram = dynamic(
+  () => import("./kroki-diagram").then((mod) => mod.KrokiDiagram),
+  {
+    loading: () => (
+      <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+        <div className="w-full flex z-20 py-2 px-4 items-center">
+          <span className="text-sm text-muted-foreground">kroki</span>
+        </div>
+        <div className="relative overflow-x-auto px-6 pb-6">
+          <div className="h-20 w-full flex items-center justify-center">
+            <span className="text-muted-foreground">Loading diagram renderer...</span>
           </div>
         </div>
       </div>
@@ -89,6 +110,45 @@ export async function highlight(
       <PurePre code={code} lang={lang}>
         <MermaidDiagram chart={code} />
       </PurePre>
+    );
+  }
+
+  // Support for all Kroki diagram types
+  const krokiDiagramTypes: DiagramType[] = [
+    "plantuml",
+    "c4plantuml",
+    "ditaa",
+    "blockdiag",
+    "seqdiag",
+    "actdiag",
+    "nwdiag",
+    "packetdiag",
+    "rackdiag",
+    "umlet",
+    "graphviz",
+    "dot",
+    "erd",
+    "svgbob",
+    "symbolator",
+    "nomnoml",
+    "vega",
+    "vegalite",
+    "wavedrom",
+    "bpmn",
+    "bytefield",
+    "excalidraw",
+    "pikchr",
+    "structurizr",
+    "diagramsnet",
+    "d2",
+    "tikz",
+    "dbml",
+    "wireviz",
+  ];
+
+  if (krokiDiagramTypes.includes(lang as DiagramType)) {
+    return (
+      <KrokiDiagram chart={code} type={lang as DiagramType} />
     );
   }
 

@@ -68,6 +68,13 @@ ${
       popup: "Another Location"
   \`\`\`
 
+Other language specifiers you can use to render something for the user:
+
+plantuml, c4plantuml, ditaa, blockdiag, seqdiag, actdiag, nwdiag,
+packetdiag, rackdiag, umlet, graphviz, dot, erd, svgbob, symbolator,
+nomnoml, vega, vegalite, wavedrom, bpmn, bytefield, excalidraw, pikchr,
+structurizr, diagramsnet, d2, tikz, dbml, wireviz
+
 </response_style>`.trim();
 
   return prompt.trim();
