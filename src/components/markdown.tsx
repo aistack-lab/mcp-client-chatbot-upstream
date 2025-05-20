@@ -3,7 +3,7 @@ import React, { memo, PropsWithChildren } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PreBlock } from "./pre-block";
-import { isJson, isString, toAny } from "lib/utils";
+import { cn, isJson, isString, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
 
 const FadeIn = memo(({ children }: PropsWithChildren) => {
@@ -140,6 +140,48 @@ const components: Partial<Components> = {
 
     // eslint-disable-next-line @next/next/no-img-element
     return <img className="mx-auto rounded-lg" src={src} alt={alt} {...rest} />;
+  },
+  table: ({ children, className, ...props }) => {
+    return (
+      <div className="my-8 px-4 w-full overflow-auto">
+        <table className={cn("w-full border-collapse rounded-xl overflow-hidden border", className)} {...props}>
+          {children}
+        </table>
+      </div>
+    );
+  },
+  thead: ({ children }) => {
+    return <thead className="bg-accent/50 border-b border-border">{children}</thead>;
+  },
+  tbody: ({ children }) => {
+    return <tbody className="divide-y divide-border">{children}</tbody>;
+  },
+  tr: ({ children, className, ...props }) => {
+    return (
+      <tr 
+        className={cn(
+          "hover:bg-accent/30 transition-colors",
+          className
+        )} 
+        {...props}
+      >
+        {children}
+      </tr>
+    );
+  },
+  th: ({ children }) => {
+    return (
+      <th className="px-6 py-4 text-left font-semibold text-foreground">
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
+      </th>
+    );
+  },
+  td: ({ children }) => {
+    return (
+      <td className="px-6 py-4 text-sm">
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
+      </td>
+    );
   },
 };
 
