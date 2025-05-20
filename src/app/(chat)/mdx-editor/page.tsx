@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import MarkdownPreview from "@uiw/react-markdown-preview";
 import dynamic from "next/dynamic";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 import { MarkdownCodeRenderer } from "@/components/ui/MarkdownCodeRenderer";
+import type { ImageDimensions } from "@/components/ui/MarkdownExportTools";
+import { Toaster } from "sonner";
+
+// Dynamically import the MarkdownExportTools to avoid SSR issues
+const MarkdownExportTools = dynamic(() => import("@/components/ui/MarkdownExportTools"), {
+  ssr: false,
+});
 
 // Dynamically import the editor to prevent SSR issues
-const MDEditor = dynamic(
-  () => import("@uiw/react-md-editor"),
-  { ssr: false }
-);
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 export default function MdxEditorPage() {
+  const previewRef = useRef<HTMLDivElement | null>(null);
   const [markdown, setMarkdown] = useState(`
 # AIStack Markdown Editor
 
@@ -21,6 +27,9 @@ export default function MdxEditorPage() {
 - Full Markdown support
 - Live preview
 - Mermaid diagram support in preview
+- Export to HTML, PDF, and Markdown
+- Image upload with drag-and-drop
+- Image resizing and alignment
 
 ## Example Mermaid Diagram
 
@@ -38,7 +47,7 @@ sequenceDiagram
     participant Patient
     participant Arzt
     participant Kasse
-    
+
     Patient->>Arzt: Vorstellung mit Beschwerden
     Arzt->>Patient: Untersuchung & Diagnose
     Arzt->>Kasse: Abrechnung nach GOÄ
@@ -50,15 +59,45 @@ sequenceDiagram
     setMarkdown(value || "");
   };
 
+  const handleInsertImage = (imageUrl: string, dimensions?: ImageDimensions) => {
+    let imageMarkdown = `![image](${imageUrl})`;
+
+    if (dimensions) {
+      const { width, align } = dimensions;
+      let alignStyle = "";
+
+      if (align === "left") alignStyle = "float:left;margin-right:10px;";
+      else if (align === "right") alignStyle = "float:right;margin-left:10px;";
+      else if (align === "center") alignStyle = "display:block;margin:0 auto;";
+
+      imageMarkdown = `<img src="${imageUrl}" alt="image" style="width:${width}%;${alignStyle}" />`;
+    }
+
+    setMarkdown((prev) => {
+      // Get cursor position for editor to insert at proper location
+      // For simplicity, we'll append to the end in this implementation
+      return `${prev}\n\n${imageMarkdown}`;
+    });
+  };
+
+  // No need to update the preview div manually; it will be rendered by React.
+
   return (
     <div className="container py-10 mx-auto">
+      <Toaster position="top-right" />
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Markdown Editor with Mermaid</h1>
+        <h1 className="text-3xl font-bold mb-2">AIStack Markdown Editor</h1>
         <p className="text-muted-foreground">
-          Edit Markdown content and see Mermaid diagrams rendered in the live preview.
+          Edite Markdown, bearbeite Mermaid diagramme, mit live preview.
         </p>
       </div>
-      
+
+      <MarkdownExportTools
+        markdownContent={markdown}
+        previewRef={previewRef}
+        onInsertImageAction={handleInsertImage}
+      />
+
       <div data-color-mode="dark">
         <MDEditor
           value={markdown}
@@ -66,11 +105,16 @@ sequenceDiagram
           height={600}
           previewOptions={{
             components: {
-              code: MarkdownCodeRenderer
-            }
+              code: (props: any) => <MarkdownCodeRenderer {...props} />,
+            },
           }}
           preview="live"
         />
+
+        {/* Hidden div to handle PDF export */}
+        <div ref={previewRef} style={{ display: "none" }}>
+          <MarkdownPreview source={markdown} />
+        </div>
       </div>
     </div>
   );
