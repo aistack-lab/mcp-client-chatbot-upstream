@@ -2,6 +2,7 @@
 
 import { UIMessage } from "ai";
 import {
+  BookText,
   Check,
   Copy,
   ChevronDown,
@@ -273,6 +274,7 @@ export const AssistMessagePart = ({
   const { copied, copy } = useCopy();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingMarkdown, setIsSavingMarkdown] = useState(false);
 
   const deleteMessage = useCallback(() => {
     safe(() => setIsDeleting(true))
@@ -319,6 +321,84 @@ export const AssistMessagePart = ({
       .ifFail((error) => toast.error(error.message))
       .watch(() => setIsLoading(false))
       .unwrap();
+  };
+
+  /**
+   * Saves the assistant's message to the markdown editor
+   * 
+   * This function sends a postMessage to the mdx-editor page to load 
+   * the content of the current message into the editor and also creates
+   * a file in the file system. It creates a default filename based on 
+   * the current date and shows a toast notification to confirm the action 
+   * was successful.
+   */
+  const saveToMarkdown = async () => {
+    setIsSavingMarkdown(true);
+    try {
+      // Generate a unique filename based on current date/time
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `assistant_${timestamp}.md`;
+      
+      // First, try to save directly to the file system
+      if ('storage' in navigator && 'getDirectory' in navigator.storage) {
+        try {
+          // Get the root directory
+          const root = await navigator.storage.getDirectory();
+          
+          // Get or create the markdown directory
+          const mdDir = await root.getDirectoryHandle('markdown', { create: true });
+          
+          // Create the file
+          const fileHandle = await mdDir.getFileHandle(filename, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(part.text);
+          await writable.close();
+          
+          // Also save to localStorage for quick access
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(`md_content_${filename}`, part.text);
+          }
+          
+          // Notify the file manager to refresh the file list
+          window.postMessage({ 
+            type: 'MARKDOWN_SAVED', 
+            filename,
+            timestamp: new Date().toISOString()
+          }, window.location.origin);
+          
+          // Additionally, send a message to load the content into the editor
+          window.postMessage({
+            type: 'LOAD_MARKDOWN',
+            content: part.text,
+            filename: filename
+          }, window.location.origin);
+          
+          toast.success(`Saved to ${filename}`);
+        } catch (fsError) {
+          console.error("File system error:", fsError);
+          // Fall back to just sending the message to the editor
+          fallbackSaveToMarkdown(filename);
+        }
+      } else {
+        // Browser doesn't support OPFS, fall back to just sending the message
+        fallbackSaveToMarkdown(filename);
+      }
+    } catch (error) {
+      toast.error("Failed to save to Markdown editor");
+      console.error("Markdown save error:", error);
+    } finally {
+      setIsSavingMarkdown(false);
+    }
+  };
+  
+  // Fallback method that just loads content into the editor
+  const fallbackSaveToMarkdown = (filename: string) => {
+    window.postMessage({
+      type: 'LOAD_MARKDOWN',
+      content: part.text,
+      filename: filename
+    }, window.location.origin);
+    toast.success(`Message loaded as ${filename}`);
   };
 
   return (
@@ -373,6 +453,22 @@ export const AssistMessagePart = ({
               </div>
             </TooltipTrigger>
             <TooltipContent>Change Model</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={saveToMarkdown}
+                disabled={isSavingMarkdown}
+                className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                {isSavingMarkdown ? <Loader className="animate-spin" /> : <BookText />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Save to Markdown Editor
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
