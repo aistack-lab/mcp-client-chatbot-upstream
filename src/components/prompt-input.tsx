@@ -203,6 +203,9 @@ export default function PromptInput({
                   onPromptResult={(result) => {
                     setInput(input + result);
                   }}
+                  onContentBubble={(content) => {
+                    setPastedContents((prev) => [...prev, content]);
+                  }}
                 />
 
                 {!toolDisabled && (

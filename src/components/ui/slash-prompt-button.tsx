@@ -33,9 +33,10 @@ import { cn } from "@/lib/utils";
 
 interface SlashPromptButtonProps {
   onPromptResult?: (result: string) => void;
+  onContentBubble?: (content: string) => void;
 }
 
-export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
+export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashPromptButtonProps) {
   const { prompts, executePrompt, isLoadingPrompt } = useMCPPrompts();
   const { files, getFileContent, isLoading: isLoadingFiles } = useMarkdownFiles();
   const [open, setOpen] = useState(false);
@@ -92,14 +93,21 @@ export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
   };
   
   const insertMarkdownContent = useCallback(() => {
-    if (selectedMarkdown && onPromptResult) {
+    if (selectedMarkdown) {
       // Format the content with metadata
       const formattedContent = `<!-- From markdown file: ${selectedMarkdown.name} -->\n\n${selectedMarkdown.preview}`;
-      onPromptResult(formattedContent);
+      
+      if (onContentBubble) {
+        // Use the content bubble approach
+        onContentBubble(formattedContent);
+      } else if (onPromptResult) {
+        // Fall back to the original approach
+        onPromptResult(formattedContent);
+      }
     }
     setSelectedMarkdown(null);
     setIsLoadingMarkdown(false);
-  }, [selectedMarkdown, onPromptResult]);
+  }, [selectedMarkdown, onPromptResult, onContentBubble]);
   
   const executePromptWithArgs = async (serverName: string, promptName: string, args?: Record<string, any>) => {
     try {
@@ -115,8 +123,12 @@ export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
       }
       
       // Pass the result to the parent component
-      if (onPromptResult && resultText) {
-        onPromptResult(resultText);
+      if (resultText) {
+        if (onContentBubble) {
+          onContentBubble(resultText);
+        } else if (onPromptResult) {
+          onPromptResult(resultText);
+        }
       }
       
       // Close any open dialog
