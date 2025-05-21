@@ -92,20 +92,46 @@ const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
     const toastId = toast.loading("Generating PDF...");
 
     try {
-      // Dynamically import html2pdf
-      const html2pdfModule = await import("html2pdf.js");
-      const html2pdf = html2pdfModule.default;
+      // Dynamically import jspdf and html2canvas
+      const { default: jsPDF } = await import("jspdf");
+      const { default: html2canvas } = await import("html2canvas-pro");
+      
+      // Create a temporary hidden div with exact A4 dimensions
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.visibility = 'hidden';
+      tempDiv.style.width = '210mm'; // A4 width
+      tempDiv.style.height = '297mm'; // A4 height
+      
+      // Clone the content
+      tempDiv.innerHTML = previewRef.current.innerHTML;
+      document.body.appendChild(tempDiv);
 
-      const element = previewRef.current;
-      const opt = {
-        margin: 1,
-        filename: "exported-document.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "cm", format: "a4", orientation: "portrait" },
-      };
-
-      await html2pdf().set(opt).from(element).save();
+      // Render with html2canvas
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      
+      // Remove temp div
+      document.body.removeChild(tempDiv);
+      
+      // Create PDF with exact A4 dimensions
+      const pdf = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+      });
+      
+      // Add the image to the PDF
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      
+      // Save the PDF
+      pdf.save('exported-document.pdf');
+      
       toast.success("PDF exported successfully", { id: toastId });
     } catch (error) {
       toast.error("Failed to export PDF", { id: toastId });
