@@ -10,7 +10,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "ui/sidebar";
-import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 
 import { useEffect, useState } from "react";
@@ -21,14 +20,8 @@ import { AppSidebarThreads } from "./app-sidebar-threads";
 import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
 import { AppSidebarProjects } from "./app-sidebar-projects";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { MarkdownFileManager } from "@/components/ui/MarkdownFileManager";
+import { ToggleNav } from "@/components/ui/toggle-nav";
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
@@ -81,28 +74,16 @@ export function AppSidebar() {
     <Sidebar collapsible="offcanvas">
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-0.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="flex items-center gap-1">
-                  <MCPIcon className="size-4 fill-foreground" />
-                  <h4 className="font-bold">aistack/chat-bot</h4>
-                  <ChevronDown className="size-3 ml-1" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <Link href="/">New Chat</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/mdx-editor">MDX Editor</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <SidebarMenuItem className="flex flex-col items-center gap-3 px-0 py-2">
+            <div className="flex items-center gap-1">
+              <MCPIcon className="size-4 fill-foreground" />
+              <h4 className="font-bold">aistack/chat-bot</h4>
+            </div>
+            <ToggleNav className="w-full px-2" />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="mt-6">
+      <SidebarContent className="mt-3">
         {pathname === "/mdx-editor" ? (
           <div className="p-4">
             <h4 className="text-sm font-semibold text-muted-foreground">
