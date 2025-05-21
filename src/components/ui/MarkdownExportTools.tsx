@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DownloadIcon, CopyIcon, ImageIcon } from "lucide-react";
+import Image from "next/image";
 import {
   Tooltip,
   TooltipContent,
@@ -397,9 +398,12 @@ const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
                     <div>
                       <Label>Image Preview</Label>
                       <div className="mt-2 border rounded-md p-2 flex justify-center">
-                        <img
+                        <Image
                           src={imageUrl}
                           alt="Preview"
+                          width={500}
+                          height={300}
+                          unoptimized
                           style={{
                             maxWidth: "100%",
                             maxHeight: "200px",
