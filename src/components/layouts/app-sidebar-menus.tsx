@@ -7,7 +7,7 @@ import { cn } from "lib/utils";
 import { SidebarGroup } from "ui/sidebar";
 import { TooltipProvider } from "ui/tooltip";
 import Link from "next/link";
-import { Library, MessageCircleDashed, Pencil, PenLine } from "lucide-react";
+import { Library, MessageCircleDashed } from "lucide-react";
 
 export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
   return (
@@ -31,8 +31,7 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p>
-                      New Chat{" "}
-                      <span className="text-xs text-muted-foreground">⌘J</span>
+                      New Chat <span className="text-xs text-muted-foreground">⌘J</span>
                     </p>
                   </TooltipContent>
                 </Link>
@@ -59,52 +58,6 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p>MCP Configuration</p>
-                  </TooltipContent>
-                </Link>
-              </SidebarMenuItem>
-            </Tooltip>
-          </TooltipProvider>
-        </SidebarMenu>
-        <SidebarMenu>
-          <TooltipProvider>
-            <Tooltip>
-              <SidebarMenuItem>
-                <Link href="/mdx-editor">
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      className={cn(
-                        isOpen && "flex justify-center"
-                      )}
-                    >
-                      {!isOpen && <Pencil className="size-4" />}
-                      Markdown Editor
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Markdown Editor</p>
-                  </TooltipContent>
-                </Link>
-              </SidebarMenuItem>
-            </Tooltip>
-          </TooltipProvider>
-        </SidebarMenu>
-        <SidebarMenu>
-          <TooltipProvider>
-            <Tooltip>
-              <SidebarMenuItem>
-                <Link href="/drawings">
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      className={cn(
-                        isOpen && "flex justify-center"
-                      )}
-                    >
-                      {!isOpen && <PenLine className="size-4" />}
-                      Drawings
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Drawings</p>
                   </TooltipContent>
                 </Link>
               </SidebarMenuItem>
