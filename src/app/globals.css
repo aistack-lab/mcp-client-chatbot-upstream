@@ -181,4 +181,29 @@ body {
         padding: 0.2rem 0.6rem;
         margin: 0 0.1rem;
     }
+    
+    /* Markdown editor stability fixes */
+    .mdeditor-container {
+        position: relative;
+        isolation: isolate;
+    }
+    
+    .mdeditor-container .w-md-editor-toolbar {
+        position: relative;
+        z-index: 2;
+        pointer-events: auto;
+    }
+    
+    .mdeditor-container .w-md-editor-toolbar button {
+        position: relative;
+        pointer-events: auto !important;
+    }
+    
+    /* Fix cursor position and text alignment */
+    .w-md-editor-text-pre > code,
+    .w-md-editor-text-input {
+        font-family: monospace !important;
+        font-size: 14px !important;
+        line-height: 20px !important;
+    }
 }

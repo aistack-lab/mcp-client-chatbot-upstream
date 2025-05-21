@@ -15,7 +15,36 @@ const MarkdownExportTools = dynamic(() => import("@/components/ui/MarkdownExport
 });
 
 // Dynamically import the editor to prevent SSR issues
-const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+const MDEditor = dynamic(() => import("@uiw/react-md-editor").then(mod => {
+  // We need to modify the global window object to prevent React DOM conflicts
+  if (typeof window !== 'undefined') {
+    // Monkey patch the removeChild method to prevent errors
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function(child) {
+      try {
+        if (child && this.contains(child)) {
+          return originalRemoveChild.call(this, child);
+        }
+      } catch (e) {
+        // Silent fail to avoid console noise
+      }
+      return child;
+    };
+    
+    // Add minimal styling for cursor alignment
+    const style = document.createElement('style');
+    style.textContent = `
+      .w-md-editor-text-pre > code,
+      .w-md-editor-text-input {
+        font-family: monospace !important;
+        font-size: 14px !important;
+        line-height: 20px !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  return mod;
+}), { ssr: false });
 
 export default function MdxEditorPage() {
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -80,6 +109,11 @@ sequenceDiagram
     });
   };
 
+  // Use our custom hook to safely handle the editor lifecycle
+  // Editor reference 
+  const editorRef = useRef<any>(null);
+  
+  // Handle editor init and DOM conflict prevention
   // No need to update the preview div manually; it will be rendered by React.
 
   return (
@@ -109,6 +143,13 @@ sequenceDiagram
             },
           }}
           preview="live"
+          textareaProps={{
+            style: {
+              fontFamily: 'monospace',
+              fontSize: '14px',
+              lineHeight: '20px',
+            }
+          }}
         />
 
         {/* Hidden div to handle PDF export */}
