@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getStorageManager } from "lib/browser-stroage";
 
 import { AppSidebarMenus } from "./app-sidebar-menus";
@@ -21,23 +21,49 @@ import { AppSidebarThreads } from "./app-sidebar-threads";
 import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
 import { AppSidebarProjects } from "./app-sidebar-projects";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { MarkdownFileManager } from "@/components/ui/MarkdownFileManager";
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
   const { open } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
+  const [_currentContent, setCurrentContent] = useState<string | null>(null);
+  const [_currentFilename, setCurrentFilename] = useState<string | null>(null);
 
   useEffect(() => {
     browserSidebarStorage.set(open);
   }, [open]);
+
+  // Listen for editor messages to update current content state
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from the same origin
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data && event.data.type === "MARKDOWN_SAVED") {
+        if (event.data.filename) {
+          setCurrentFilename(event.data.filename);
+        }
+      }
+
+      if (event.data && event.data.type === "EDITOR_CONTENT_UPDATED") {
+        if (event.data.content) {
+          setCurrentContent(event.data.content);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,10 +105,19 @@ export function AppSidebar() {
       <SidebarContent className="mt-6">
         {pathname === "/mdx-editor" ? (
           <div className="p-4">
-            <h4 className="text-sm font-semibold text-muted-foreground">MDX Editor Navigation</h4>
-            <p className="text-xs text-muted-foreground mt-2">
-              (Future: List of Markdown documents will appear here)
-            </p>
+            <h4 className="text-sm font-semibold text-muted-foreground">
+              MDX Editor Navigation
+            </h4>
+            <MarkdownFileManager
+              onFileSelectAction={(content) => {
+                // Use window.postMessage to communicate with the editor
+                window.postMessage(
+                  { type: "LOAD_MARKDOWN", content },
+                  window.location.origin,
+                );
+                setCurrentContent(content);
+              }}
+            />
           </div>
         ) : (
           <>

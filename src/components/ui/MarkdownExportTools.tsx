@@ -30,12 +30,14 @@ interface MarkdownExportToolsProps {
   markdownContent: string;
   previewRef: React.RefObject<HTMLDivElement | null>;
   onInsertImageAction: (imageUrl: string, dimensions?: ImageDimensions) => void;
+  currentFilename?: string;
 }
 
 const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
   markdownContent,
   previewRef,
   onInsertImageAction,
+  currentFilename,
 }) => {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({
@@ -45,6 +47,8 @@ const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [openImageDialog, setOpenImageDialog] = useState(false);
+  const [markdownFileSystem, setMarkdownFileSystem] = useState<FileSystemDirectoryHandle | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Export as HTML
   const exportAsHtml = () => {
@@ -115,13 +119,82 @@ const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "document.md";
+    a.download = currentFilename || "document.md";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast.success("Markdown exported successfully");
+  };
+
+  // Save to OPFS
+  const saveToFileSystem = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Initialize file system if not already done
+      if (!markdownFileSystem) {
+        if (!('storage' in navigator && 'getDirectory' in navigator.storage)) {
+          toast.error('Your browser does not support the Origin Private File System API');
+          setIsSaving(false);
+          return;
+        }
+        
+        // Get the root directory
+        const root = await navigator.storage.getDirectory();
+        
+        // Get or create the markdown directory
+        try {
+          const mdDir = await root.getDirectoryHandle('markdown', { create: true });
+          setMarkdownFileSystem(mdDir);
+        } catch (e) {
+          console.error('Failed to access markdown directory:', e);
+          toast.error('Failed to access storage');
+          setIsSaving(false);
+          return;
+        }
+      }
+      
+      // Prompt for filename if needed
+      let filename = currentFilename;
+      if (!filename || filename === 'unsaved.md') {
+        const userFilename = window.prompt('Enter a filename:', 'document.md');
+        if (!userFilename) {
+          setIsSaving(false);
+          return;
+        }
+        filename = userFilename.endsWith('.md') ? userFilename : `${userFilename}.md`;
+      }
+      
+      // Also save to localStorage for quick access
+      if (filename && typeof window !== 'undefined') {
+        window.localStorage.setItem(`md_content_${filename}`, markdownContent);
+      }
+      
+      // Save the file
+      if (!markdownFileSystem) {
+        throw new Error('File system not initialized');
+      }
+      const fileHandle = await markdownFileSystem.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(markdownContent);
+      await writable.close();
+      
+      // Notify the parent that we've saved a file
+      window.postMessage({ 
+        type: 'MARKDOWN_SAVED', 
+        filename,
+        timestamp: new Date().toISOString()
+      }, window.location.origin);
+      
+      toast.success(`Saved to ${filename}`);
+    } catch (err) {
+      console.error('Error saving file:', err);
+      toast.error('Failed to save file');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Copy to clipboard
@@ -209,46 +282,61 @@ const MarkdownExportTools: React.FC<MarkdownExportToolsProps> = ({
         onDrop={handleDrop}
       >
         <div className="space-x-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={exportAsMarkdown}>
-                <DownloadIcon className="h-4 w-4" />
-                MD
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Export as Markdown</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={exportAsMarkdown}>
+                  <DownloadIcon className="h-4 w-4" />
+                  MD
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Export as Markdown</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={exportAsHtml}>
-                <DownloadIcon className="h-4 w-4" />
-                HTML
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Export as HTML</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={exportAsHtml}>
+                  <DownloadIcon className="h-4 w-4" />
+                  HTML
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Export as HTML</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={exportAsPdf}>
-                <DownloadIcon className="h-4 w-4" />
-                PDF
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Export as PDF</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={exportAsPdf}>
+                  <DownloadIcon className="h-4 w-4" />
+                  PDF
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Export as PDF</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                <CopyIcon className="h-4 w-4" />
-                Copy
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Copy to clipboard</TooltipContent>
-          </Tooltip>
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                  <CopyIcon className="h-4 w-4" />
+                  Copy
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy to clipboard</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={saveToFileSystem} 
+                  disabled={isSaving}
+                >
+                  <CopyIcon className="h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Save to file system</TooltipContent>
+            </Tooltip>
+          </div>
 
         <div className="ml-auto">
           <Dialog open={openImageDialog} onOpenChange={setOpenImageDialog}>
