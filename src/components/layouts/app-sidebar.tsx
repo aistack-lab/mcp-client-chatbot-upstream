@@ -21,10 +21,13 @@ import { MCPIcon } from "ui/mcp-icon";
 import { AppSidebarProjects } from "./app-sidebar-projects";
 import { MarkdownFileManager } from "@/components/ui/MarkdownFileManager";
 import { ToggleNav } from "@/components/ui/toggle-nav";
+import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
+
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
-  const { open } = useSidebar();
+  const { open, toggleSidebar } = useSidebar();
+
   const router = useRouter();
   const pathname = usePathname();
   const [_currentContent, setCurrentContent] = useState<string | null>(null);
@@ -62,15 +65,20 @@ export function AppSidebar() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+      if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
         e.stopPropagation();
         router.push("/");
       }
+      if (isShortcutEvent(e, Shortcuts.toggleSidebar)) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebar();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [router]);
+  }, [router, toggleSidebar]);
 
   return (
     <Sidebar collapsible="offcanvas">
