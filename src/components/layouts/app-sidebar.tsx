@@ -6,7 +6,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "ui/sidebar";
@@ -30,6 +29,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const [_currentContent, setCurrentContent] = useState<string | null>(null);
   const [_currentFilename, setCurrentFilename] = useState<string | null>(null);
+  // Track current drawing state
+  // No drawing state needed yet - will be implemented in future
+  const [currentDrawing] = useState<string | null>(null);
 
   useEffect(() => {
     browserSidebarStorage.set(open);
@@ -99,6 +101,16 @@ export function AppSidebar() {
                 setCurrentContent(content);
               }}
             />
+          </div>
+        ) : pathname.startsWith("/drawings") ? (
+          <div className="p-4">
+            <h4 className="text-sm font-semibold text-muted-foreground">
+              Drawings
+            </h4>
+            <p className="text-xs text-muted-foreground mt-2">
+              Use the drawing tools to create diagrams and sketches.
+              {currentDrawing && <span className="block mt-1 font-medium">{currentDrawing}</span>}
+            </p>
           </div>
         ) : (
           <>
