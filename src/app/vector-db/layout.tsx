@@ -1,4 +1,5 @@
-```tsx
+"use client";
+
 import { SidebarProvider } from "ui/sidebar";
 import { AppSidebar } from "@/components/layouts/app-sidebar";
 import { AppHeader } from "@/components/layouts/app-header";
@@ -19,4 +20,3 @@ export default function VectorDBLayout({
     </SidebarProvider>
   );
 }
-```
