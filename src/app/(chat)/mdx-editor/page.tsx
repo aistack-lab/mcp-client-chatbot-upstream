@@ -25,7 +25,7 @@ const MDEditor = dynamic(() => import("@uiw/react-md-editor").then(mod => {
         if (child && this.contains(child)) {
           return originalRemoveChild.call(this, child);
         }
-      } catch (e) {
+      } catch (_) {
         // Silent fail to avoid console noise
       }
       return child as any; // Fix type casting
@@ -186,7 +186,7 @@ sequenceDiagram
   };
 
   return (
-    <div className="container py-10 mx-auto">
+    <div className="w-full py-10 px-4">
       <Toaster position="top-right" />
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">AIStack Markdown Editor</h1>
@@ -202,11 +202,11 @@ sequenceDiagram
         currentFilename={currentFilename || "unsaved.md"}
       />
 
-      <div data-color-mode="dark">
+      <div data-color-mode="dark" className="w-full">
         <MDEditor
           value={markdown}
           onChange={handleEditorChange}
-          height={600}
+          height={650}
           previewOptions={{
             components: {
               code: (props: any) => <MarkdownCodeRenderer {...props} />,
