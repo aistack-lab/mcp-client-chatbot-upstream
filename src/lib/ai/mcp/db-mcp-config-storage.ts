@@ -11,100 +11,38 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
   const debounce = createDebounce();
   let manager: MCPClientsManager;
 
-  // Cache of last known server configs to avoid unnecessary refreshes
-  let lastServerConfigs: Record<string, string> = {};
-  
   // Function to refresh clients when configs change
   const refreshClients = async () => {
-      try {
-        logger.info("Starting MCP clients refresh cycle");
-        const servers = await mcpRepository.selectAllServers();
-        logger.info(`Found ${servers.length} server configurations in database`);
+    try {
+      const servers = await mcpRepository.selectAllServers();
 
-        // Get all current clients
-        const currentClients = new Set(
-          manager.getClients().map((c) => c.getInfo().name),
-        );
-        logger.info(`Current active clients: ${Array.from(currentClients).join(', ') || 'none'}`);
+      // Get all current clients
+      const currentClients = new Set(
+        manager.getClients().map((c) => c.getInfo().name),
+      );
 
-        // Track which configs have actually changed
-        const changedConfigs = new Set<string>();
-        const newServerConfigs: Record<string, string> = {};
-        
-        // Check for new, updated, or removed servers
-        for (const server of servers) {
-          if (server.enabled) {
-            // Create a string representation of the config for comparison
-            const configStr = JSON.stringify(server.config);
-            newServerConfigs[server.name] = configStr;
-            
-            // Check if this server is new or its config has changed
-            if (!lastServerConfigs[server.name] || lastServerConfigs[server.name] !== configStr) {
-              changedConfigs.add(server.name);
-            }
-          }
-        }
-        
-        // Check for removed servers
-        for (const cachedServerName of Object.keys(lastServerConfigs)) {
-          if (!newServerConfigs[cachedServerName]) {
-            changedConfigs.add(cachedServerName);
-          }
-        }
-        
-        // If no changes detected, skip the refresh
-        if (changedConfigs.size === 0) {
-          logger.info("No MCP client configuration changes detected, skipping refresh");
-          return;
-        }
-        
-        logger.info(`Detected changes for servers: ${Array.from(changedConfigs).join(', ')}`);
-        
-        // Process new or updated clients
-        let refreshCount = 0;
-        let addCount = 0;
-        for (const server of servers) {
-          if (server.enabled) {
-            if (currentClients.has(server.name)) {
-              // Only refresh if config has changed
-              if (changedConfigs.has(server.name)) {
-                logger.info(`Refreshing existing client with updated config: ${server.name}`);
-                await manager.refreshClient(server.name, server.config);
-                refreshCount++;
-              } else {
-                logger.debug(`Skipping refresh for unchanged client: ${server.name}`);
-              }
-            } else {
-              // Add new client
-              logger.info(`Adding new client: ${server.name}`);
-              await manager.addClient(server.name, server.config);
-              addCount++;
-            }
-            currentClients.delete(server.name);
+      // Process new or updated clients
+      for (const server of servers) {
+        if (server.enabled) {
+          if (currentClients.has(server.name)) {
+            // Refresh existing client with potential config updates
+            await manager.refreshClient(server.name, server.config);
           } else {
-            logger.info(`Skipping disabled server: ${server.name}`);
+            // Add new client
+            await manager.addClient(server.name, server.config);
           }
+          currentClients.delete(server.name);
         }
-      
-        logger.info(`Refresh summary: ${refreshCount} clients refreshed, ${addCount} clients added`);
-
-        // Remove clients that no longer exist in database or are disabled
-        let removeCount = 0;
-        for (const clientName of currentClients) {
-          logger.info(`Removing client not in database: ${clientName}`);
-          await manager.removeClient(clientName);
-          removeCount++;
-        }
-      
-        logger.info(`Removed ${removeCount} clients that no longer exist in database`);
-        logger.info("MCP clients refresh cycle completed successfully");
-        
-        // Update the cache with new configs
-        lastServerConfigs = newServerConfigs;
-      } catch (error) {
-        logger.error("Failed to refresh MCP clients from database:", error);
       }
-    };
+
+      // Remove clients that no longer exist in database or are disabled
+      for (const clientName of currentClients) {
+        await manager.removeClient(clientName);
+      }
+    } catch (error) {
+      logger.error("Failed to refresh MCP clients from database:", error);
+    }
+  };
 
   return {
     async init(_manager: MCPClientsManager): Promise<void> {
@@ -115,23 +53,15 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
 
       // Set up polling for changes in database environment
       // This is needed since we can't directly watch database changes
-      // Using a longer interval to reduce unnecessary refreshes
-      logger.info("Setting up MCP clients refresh polling (5min interval)");
-      const pollingInterval = setInterval(() => {
-        logger.debug("MCP refresh polling triggered");
+      // A 30 second interval is reasonable for most use cases
+      setInterval(() => {
         debounce(refreshClients, 1000);
-      }, 5 * 60 * 1000); // 5 minutes
-      
-      // Add cleanup for the interval
-      process.on('SIGINT', () => clearInterval(pollingInterval));
-      process.on('SIGTERM', () => clearInterval(pollingInterval));
+      }, 30000);
     },
 
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
       try {
-        logger.info("Attempting to load MCP server configurations from database");
         const servers = await mcpRepository.selectAllServers();
-        logger.info(`Successfully loaded ${servers.length} MCP server configurations`);
         return Object.fromEntries(
           servers
             .filter((server) => server.enabled)
