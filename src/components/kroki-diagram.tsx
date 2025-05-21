@@ -6,6 +6,7 @@ import { useCopy } from "@/hooks/use-copy";
 import { Button } from "ui/button";
 import { Clipboard, CheckIcon, Download } from "lucide-react";
 import { KrokiClient, DiagramType } from "@/lib/diagram-renderer";
+import Image from "next/image";
 
 interface KrokiDiagramProps {
   chart: string;
@@ -111,11 +112,14 @@ export function KrokiDiagram({ chart, type }: KrokiDiagramProps) {
           </div>
         ) : (
           <div className="flex justify-center transition-opacity max-w-full overflow-auto">
-            <img
+            <Image
               src={imageUrl}
               alt={`${type} diagram`}
               className="max-w-full"
               onError={() => setError(`Failed to load ${type} diagram`)}
+              width={500}
+              height={300}
+              unoptimized
             />
           </div>
         )}
