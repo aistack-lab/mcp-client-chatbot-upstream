@@ -17,7 +17,7 @@ import type { ChatThread, Project } from "app-types/chat";
 
 import { chatRepository } from "lib/db/repository";
 import { customModelProvider } from "lib/ai/models";
-import { toAny } from "lib/utils";
+import { generateUUID, toAny } from "lib/utils";
 import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
@@ -187,6 +187,52 @@ export async function updateProjectAction(
 export async function deleteProjectAction(id: string) {
   await serverCache.delete(CacheKeys.project(id));
   await chatRepository.deleteProject(id);
+}
+
+export async function branchOffThreadAction(
+  threadId: string,
+  messageId: string,
+): Promise<ChatThread> {
+  const userId = await getUserId();
+  
+  // Fetch messages from the original thread up to the specified message
+  const messages = await chatRepository.selectMessagesByThreadId(threadId);
+  const upToMessageIndex = messages.findIndex(msg => msg.id === messageId);
+  
+  if (upToMessageIndex === -1) {
+    throw new Error("Message not found in thread");
+  }
+  
+  // Get messages up to and including the specified message
+  const messagesToBranch = messages.slice(0, upToMessageIndex + 1);
+  
+  // Create a new thread with a branched title
+  const sourceThread = await chatRepository.selectThread(threadId);
+  if (!sourceThread) {
+    throw new Error("Source thread not found");
+  }
+  
+  const branchedThread = await chatRepository.insertThread({
+    id: generateUUID(),
+    title: `${sourceThread.title} (branched)`,
+    userId,
+    projectId: sourceThread.projectId,
+  });
+  
+  // Copy messages to the new thread
+  for (const message of messagesToBranch) {
+    await chatRepository.insertMessage({
+      id: generateUUID(),
+      threadId: branchedThread.id,
+      role: message.role,
+      parts: message.parts,
+      annotations: message.annotations,
+      attachments: message.attachments,
+      model: message.model,
+    });
+  }
+  
+  return branchedThread;
 }
 
 export async function rememberProjectInstructionsAction(

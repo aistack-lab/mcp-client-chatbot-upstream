@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   ChevronDown,
+  GitBranch,
   Loader,
   Pencil,
   ChevronDownIcon,
@@ -32,12 +33,14 @@ import {
 import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
+import { useRouter } from "next/navigation";
 
 import { Card, CardContent } from "ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { SelectModel } from "./select-model";
 import { customModelProvider } from "lib/ai/models";
 import {
+  branchOffThreadAction,
   deleteMessageAction,
   deleteMessagesByChatIdAfterTimestampAction,
 } from "@/app/api/chat/actions";
@@ -48,6 +51,7 @@ import { ChatMessageAnnotation } from "app-types/chat";
 import { DefaultToolName } from "lib/ai/tools/utils";
 import { Skeleton } from "ui/skeleton";
 import { PieChart } from "./tool-invocation/pie-chart";
+import { mutate } from "swr";
 import { BarChart } from "./tool-invocation/bar-chart";
 import { LineChart } from "./tool-invocation/line-chart";
 
@@ -275,6 +279,8 @@ export const AssistMessagePart = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSavingMarkdown, setIsSavingMarkdown] = useState(false);
+  const [isBranching, setIsBranching] = useState(false);
+  const router = useRouter();
 
   const deleteMessage = useCallback(() => {
     safe(() => setIsDeleting(true))
@@ -400,6 +406,24 @@ export const AssistMessagePart = ({
     }, window.location.origin);
     toast.success(`Message loaded as ${filename}`);
   };
+  
+  const handleBranchOff = async () => {
+    if (!threadId || !message.id) return;
+    
+    setIsBranching(true);
+    try {
+      const newThread = await branchOffThreadAction(threadId, message.id);
+      // Update the threads list in the sidebar
+      mutate("threads");
+      router.push(`/chat/${newThread.id}`);
+      toast.success('Created new thread branch');
+    } catch (error) {
+      toast.error('Failed to branch off thread');
+      console.error('Branch error:', error);
+    } finally {
+      setIsBranching(false);
+    }
+  };
 
   return (
     <div
@@ -468,6 +492,22 @@ export const AssistMessagePart = ({
             </TooltipTrigger>
             <TooltipContent side="bottom">
               Save to Markdown Editor
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={isBranching}
+                onClick={handleBranchOff}
+                className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:bg-primary/10 hover:text-primary"
+              >
+                {isBranching ? <Loader className="animate-spin" /> : <GitBranch />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Branch Off
             </TooltipContent>
           </Tooltip>
           <Tooltip>
