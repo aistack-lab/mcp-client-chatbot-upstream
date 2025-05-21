@@ -8,6 +8,7 @@ import "@uiw/react-markdown-preview/markdown.css";
 import { MarkdownCodeRenderer } from "@/components/ui/MarkdownCodeRenderer";
 import type { ImageDimensions } from "@/components/ui/MarkdownExportTools";
 import { Toaster } from "sonner";
+import { ToggleNav } from "@/components/ui/toggle-nav";
 
 // Dynamically import the MarkdownExportTools to avoid SSR issues
 const MarkdownExportTools = dynamic(() => import("@/components/ui/MarkdownExportTools"), {
@@ -189,6 +190,7 @@ sequenceDiagram
     <div className="w-full py-10 px-4">
       <Toaster position="top-right" />
       <div className="mb-6">
+        <ToggleNav className="w-[280px] mb-4" />
         <h1 className="text-3xl font-bold mb-2">AIStack Markdown Editor</h1>
         <p className="text-muted-foreground">
           Edite Markdown, bearbeite Mermaid diagramme, mit live preview.
