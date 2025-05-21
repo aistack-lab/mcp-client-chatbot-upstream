@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Popover, 
@@ -13,10 +13,12 @@ import {
   CommandGroup, 
   CommandInput, 
   CommandItem, 
-  CommandList 
+  CommandList,
+  CommandSeparator
 } from "@/components/ui/command";
-import { Slash } from "lucide-react";
+import { FileText, Slash } from "lucide-react";
 import { useMCPPrompts, type MCPPromptArg } from "@/lib/hooks/use-mcp-prompts";
+import { useMarkdownFiles } from "@/lib/hooks/use-markdown-files";
 import { 
   Dialog, 
   DialogContent, 
@@ -35,8 +37,11 @@ interface SlashPromptButtonProps {
 
 export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
   const { prompts, executePrompt, isLoadingPrompt } = useMCPPrompts();
+  const { files, getFileContent, isLoading: isLoadingFiles } = useMarkdownFiles();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [isLoadingMarkdown, setIsLoadingMarkdown] = useState(false);
+  const [selectedMarkdown, setSelectedMarkdown] = useState<{ name: string; preview: string } | null>(null);
   
   // For prompt arguments dialog
   const [promptDialog, setPromptDialog] = useState<{
@@ -67,6 +72,34 @@ export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
       executePromptWithArgs(serverName, promptName);
     }
   };
+  
+  const handleMarkdownSelect = async (filename: string) => {
+    setOpen(false);
+    setIsLoadingMarkdown(true);
+    
+    try {
+      const content = await getFileContent(filename);
+      
+      // Show preview dialog
+      setSelectedMarkdown({
+        name: filename,
+        preview: content
+      });
+    } catch (error) {
+      console.error("Error loading markdown file:", error);
+      setIsLoadingMarkdown(false);
+    }
+  };
+  
+  const insertMarkdownContent = useCallback(() => {
+    if (selectedMarkdown && onPromptResult) {
+      // Format the content with metadata
+      const formattedContent = `<!-- From markdown file: ${selectedMarkdown.name} -->\n\n${selectedMarkdown.preview}`;
+      onPromptResult(formattedContent);
+    }
+    setSelectedMarkdown(null);
+    setIsLoadingMarkdown(false);
+  }, [selectedMarkdown, onPromptResult]);
   
   const executePromptWithArgs = async (serverName: string, promptName: string, args?: Record<string, any>) => {
     try {
@@ -150,33 +183,114 @@ export function SlashPromptButton({ onPromptResult }: SlashPromptButtonProps) {
               onValueChange={setSearch}
             />
             <CommandList>
-              <CommandEmpty>No prompts found</CommandEmpty>
-              <CommandGroup heading="Available Prompts">
-                {prompts?.map((prompt) => (
-                  <CommandItem
-                    key={prompt.id}
-                    onSelect={() => handlePromptSelect(
-                      prompt.id, 
-                      prompt.name, 
-                      prompt.serverName, 
-                      prompt.arguments
+              <CommandEmpty>No items found</CommandEmpty>
+              {prompts && prompts.length > 0 && (
+                <CommandGroup heading="Available Prompts">
+                  {prompts.map((prompt) => (
+                    <CommandItem
+                      key={prompt.id}
+                      onSelect={() => handlePromptSelect(
+                        prompt.id, 
+                        prompt.name, 
+                        prompt.serverName, 
+                        prompt.arguments
+                      )}
+                      className="flex flex-col items-start p-2"
+                    >
+                      <div className="font-medium">{prompt.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {prompt.description}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Server: {prompt.serverName}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+              
+              {files && (
+                <>
+                  {prompts && prompts.length > 0 && <CommandSeparator />}
+                  <CommandGroup heading="Markdown Files (Insert as Reference)">
+                    {files.length > 0 ? (
+                      files
+                        .filter(file => !search || file.name.toLowerCase().includes(search.toLowerCase()))
+                        .map((file) => (
+                          <CommandItem
+                            key={file.id}
+                            onSelect={() => handleMarkdownSelect(file.name)}
+                            className="flex items-center p-2"
+                          >
+                            <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <div className="font-medium">{file.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Last modified: {file.lastModified.toLocaleDateString()}
+                              </div>
+                            </div>
+                          </CommandItem>
+                        ))
+                    ) : (
+                      <div className="px-2 py-3 text-xs text-muted-foreground">
+                        No markdown files found. Use the "Save to Markdown" button on assistant messages to create files.
+                      </div>
                     )}
-                    className="flex flex-col items-start p-2"
-                  >
-                    <div className="font-medium">{prompt.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {prompt.description}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Server: {prompt.serverName}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+                  </CommandGroup>
+                </>
+              )}
+              
+              {isLoadingFiles && (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Loading markdown files...
+                </div>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
+      
+      {/* Markdown Preview Dialog */}
+      {selectedMarkdown && (
+        <Dialog open={true} onOpenChange={(open) => !open && setSelectedMarkdown(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>
+                Insert Markdown File: {selectedMarkdown.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="max-h-[50vh] overflow-y-auto border rounded-md p-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground mb-2">Preview:</div>
+              <pre className="whitespace-pre-wrap text-sm font-mono">{selectedMarkdown.preview.slice(0, 1000)}
+                {selectedMarkdown.preview.length > 1000 ? '...' : ''}
+              </pre>
+              {selectedMarkdown.preview.length > 1000 && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  Note: This file is truncated in the preview but will be inserted in full.
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setSelectedMarkdown(null)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button"
+                onClick={insertMarkdownContent}
+                className="bg-primary"
+              >
+                Insert as Reference
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Arguments Dialog */}
       {promptDialog && (
