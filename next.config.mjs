@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,11 +13,9 @@ const nextConfig = {
     };
     return config;
   },
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        html2canvas: "html2canvas-pro",
-      },
+  turbopack: {
+    resolveAlias: {
+      html2canvas: "html2canvas-pro",
     },
   },
 };
