@@ -8,7 +8,7 @@ declare global {
     entries(): AsyncIterable<[string, FileSystemHandle]>;
   }
   interface FileSystemHandle {
-    kind: string;
+    readonly kind: 'file' | 'directory';
     getFile(): Promise<File>;
   }
 }

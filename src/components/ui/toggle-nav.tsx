@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MessageSquare, FileText, PenLine, Database } from "lucide-react";
@@ -14,17 +14,22 @@ export function ToggleNav({ className }: ToggleNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
-  const isChat = !pathname.includes("/mdx-editor") && !pathname.includes("/drawings") && !pathname.includes("/vector-db");
+
+  const isChat =
+    !pathname.includes("/mdx-editor") &&
+    !pathname.includes("/drawings") &&
+    !pathname.includes("/vector-db");
   const isMarkdown = pathname.includes("/mdx-editor");
   const isDrawings = pathname.includes("/drawings");
   const isVectorDB = pathname.includes("/vector-db");
-  
+
   const handleToggle = (view: "chat" | "markdown" | "drawings" | "vector-db") => {
-    if ((view === "chat" && pathname !== "/") || 
-        (view === "markdown" && pathname !== "/mdx-editor") ||
-        (view === "drawings" && pathname !== "/drawings") ||
-        (view === "vector-db" && pathname !== "/vector-db")) {
+    if (
+      (view === "chat" && pathname !== "/") ||
+      (view === "markdown" && pathname !== "/mdx-editor") ||
+      (view === "drawings" && pathname !== "/drawings") ||
+      (view === "vector-db" && pathname !== "/vector-db")
+    ) {
       setIsTransitioning(true);
       setTimeout(() => {
         if (view === "chat") {
@@ -43,21 +48,21 @@ export function ToggleNav({ className }: ToggleNavProps) {
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "grid grid-cols-2 gap-1 rounded-md border p-1 text-center text-xs font-medium w-full shadow-sm relative overflow-hidden",
         isTransitioning ? "cursor-not-allowed" : "",
-        className
+        className,
       )}
     >
-      <motion.div 
+      <motion.div
         className="absolute bg-primary z-0 rounded-sm"
         initial={false}
         animate={{
           top: isChat || isMarkdown ? "4px" : "calc(50% + 2px)",
           left: isChat || isDrawings ? "4px" : "calc(50% + 2px)",
           width: "calc(50% - 6px)",
-          height: "calc(50% - 6px)"
+          height: "calc(50% - 6px)",
         }}
         transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
       />
@@ -68,7 +73,7 @@ export function ToggleNav({ className }: ToggleNavProps) {
           isChat
             ? "text-primary-foreground"
             : "text-muted-foreground hover:text-foreground",
-          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer",
         )}
         disabled={isTransitioning}
       >
@@ -82,7 +87,7 @@ export function ToggleNav({ className }: ToggleNavProps) {
           isMarkdown
             ? "text-primary-foreground"
             : "text-muted-foreground hover:text-foreground",
-          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer",
         )}
         disabled={isTransitioning}
       >
@@ -96,7 +101,7 @@ export function ToggleNav({ className }: ToggleNavProps) {
           isDrawings
             ? "text-primary-foreground"
             : "text-muted-foreground hover:text-foreground",
-          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer",
         )}
         disabled={isTransitioning}
       >
@@ -110,7 +115,7 @@ export function ToggleNav({ className }: ToggleNavProps) {
           isVectorDB
             ? "text-primary-foreground"
             : "text-muted-foreground hover:text-foreground",
-          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+          isTransitioning ? "cursor-not-allowed opacity-80" : "cursor-pointer",
         )}
         disabled={isTransitioning}
       >

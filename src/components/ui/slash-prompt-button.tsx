@@ -2,29 +2,25 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from "@/components/ui/popover";
-import { 
-  Command, 
-  CommandEmpty, 
-  CommandGroup, 
-  CommandInput, 
-  CommandItem, 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
   CommandList,
-  CommandSeparator
+  CommandSeparator,
 } from "@/components/ui/command";
 import { FileText, Slash } from "lucide-react";
 import { useMCPPrompts, type MCPPromptArg } from "@/lib/hooks/use-mcp-prompts";
 import { useMarkdownFiles } from "@/lib/hooks/use-markdown-files";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -36,14 +32,20 @@ interface SlashPromptButtonProps {
   onContentBubble?: (content: string) => void;
 }
 
-export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashPromptButtonProps) {
+export function SlashPromptButton({
+  onPromptResult,
+  onContentBubble,
+}: SlashPromptButtonProps) {
   const { prompts, executePrompt, isLoadingPrompt } = useMCPPrompts();
   const { files, getFileContent, isLoading: isLoadingFiles } = useMarkdownFiles();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [isLoadingMarkdown, setIsLoadingMarkdown] = useState(false);
-  const [selectedMarkdown, setSelectedMarkdown] = useState<{ name: string; preview: string } | null>(null);
-  
+  const [, setIsLoadingMarkdown] = useState(false);
+  const [selectedMarkdown, setSelectedMarkdown] = useState<{
+    name: string;
+    preview: string;
+  } | null>(null);
+
   // For prompt arguments dialog
   const [promptDialog, setPromptDialog] = useState<{
     isOpen: boolean;
@@ -51,20 +53,25 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
     serverName: string;
     args: MCPPromptArg[];
   } | null>(null);
-  
+
   const [argValues, setArgValues] = useState<Record<string, any>>({});
   const [argErrors, setArgErrors] = useState<Record<string, string>>({});
-  
-  const handlePromptSelect = (_promptId: string, promptName: string, serverName: string, args: MCPPromptArg[] = []) => {
+
+  const handlePromptSelect = (
+    _promptId: string,
+    promptName: string,
+    serverName: string,
+    args: MCPPromptArg[] = [],
+  ) => {
     setOpen(false);
-    
+
     if (args.length > 0) {
       // Open dialog for arguments
       setPromptDialog({
         isOpen: true,
         promptName,
         serverName,
-        args
+        args,
       });
       setArgValues({});
       setArgErrors({});
@@ -73,30 +80,30 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
       executePromptWithArgs(serverName, promptName);
     }
   };
-  
+
   const handleMarkdownSelect = async (filename: string) => {
     setOpen(false);
     setIsLoadingMarkdown(true);
-    
+
     try {
       const content = await getFileContent(filename);
-      
+
       // Show preview dialog
       setSelectedMarkdown({
         name: filename,
-        preview: content
+        preview: content,
       });
     } catch (error) {
       console.error("Error loading markdown file:", error);
       setIsLoadingMarkdown(false);
     }
   };
-  
+
   const insertMarkdownContent = useCallback(() => {
     if (selectedMarkdown) {
       // Format the content with metadata
       const formattedContent = `<!-- From markdown file: ${selectedMarkdown.name} -->\n\n${selectedMarkdown.preview}`;
-      
+
       if (onContentBubble) {
         // Use the content bubble approach
         onContentBubble(formattedContent);
@@ -108,11 +115,15 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
     setSelectedMarkdown(null);
     setIsLoadingMarkdown(false);
   }, [selectedMarkdown, onPromptResult, onContentBubble]);
-  
-  const executePromptWithArgs = async (serverName: string, promptName: string, args?: Record<string, any>) => {
+
+  const executePromptWithArgs = async (
+    serverName: string,
+    promptName: string,
+    args?: Record<string, any>,
+  ) => {
     try {
       const result = await executePrompt(serverName, promptName, args);
-      
+
       // Extract text from the result
       let resultText = "";
       if (result && result.messages) {
@@ -121,7 +132,7 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
           .filter(Boolean)
           .join("\n");
       }
-      
+
       // Pass the result to the parent component
       if (resultText) {
         if (onContentBubble) {
@@ -130,57 +141,60 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
           onPromptResult(resultText);
         }
       }
-      
+
       // Close any open dialog
       setPromptDialog(null);
     } catch (error) {
       console.error("Error executing prompt:", error);
     }
   };
-  
+
   const handleArgChange = (name: string, value: any) => {
-    setArgValues(prev => ({
+    setArgValues((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear any errors for this field
     if (argErrors[name]) {
-      setArgErrors(prev => {
+      setArgErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
       });
     }
   };
-  
+
   const handleArgSubmit = () => {
     if (!promptDialog) return;
-    
+
     // Validate required arguments
     const newErrors: Record<string, string> = {};
-    promptDialog.args.forEach(arg => {
-      if (arg.required && (!argValues[arg.name] || String(argValues[arg.name]).trim() === "")) {
+    promptDialog.args.forEach((arg) => {
+      if (
+        arg.required &&
+        (!argValues[arg.name] || String(argValues[arg.name]).trim() === "")
+      ) {
         newErrors[arg.name] = "This field is required";
       }
     });
-    
+
     if (Object.keys(newErrors).length > 0) {
       setArgErrors(newErrors);
       return;
     }
-    
+
     // Execute the prompt with the collected arguments
     executePromptWithArgs(promptDialog.serverName, promptDialog.promptName, argValues);
   };
-  
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             className="h-8 w-8 rounded-full"
             title="Prompt Library"
           >
@@ -189,8 +203,8 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
         </PopoverTrigger>
         <PopoverContent className="w-[300px] p-0" align="end">
           <Command>
-            <CommandInput 
-              placeholder="Search prompts..." 
+            <CommandInput
+              placeholder="Search prompts..."
               value={search}
               onValueChange={setSearch}
             />
@@ -201,12 +215,14 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                   {prompts.map((prompt) => (
                     <CommandItem
                       key={prompt.id}
-                      onSelect={() => handlePromptSelect(
-                        prompt.id, 
-                        prompt.name, 
-                        prompt.serverName, 
-                        prompt.arguments
-                      )}
+                      onSelect={() =>
+                        handlePromptSelect(
+                          prompt.id,
+                          prompt.name,
+                          prompt.serverName,
+                          prompt.arguments,
+                        )
+                      }
                       className="flex flex-col items-start p-2"
                     >
                       <div className="font-medium">{prompt.name}</div>
@@ -220,14 +236,18 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                   ))}
                 </CommandGroup>
               )}
-              
+
               {files && (
                 <>
                   {prompts && prompts.length > 0 && <CommandSeparator />}
                   <CommandGroup heading="Markdown Files (Insert as Reference)">
                     {files.length > 0 ? (
                       files
-                        .filter(file => !search || file.name.toLowerCase().includes(search.toLowerCase()))
+                        .filter(
+                          (file) =>
+                            !search ||
+                            file.name.toLowerCase().includes(search.toLowerCase()),
+                        )
                         .map((file) => (
                           <CommandItem
                             key={file.id}
@@ -245,13 +265,14 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                         ))
                     ) : (
                       <div className="px-2 py-3 text-xs text-muted-foreground">
-                        No markdown files found. Use the "Save to Markdown" button on assistant messages to create files.
+                        No markdown files found. Use the &quot;Save to Markdown&quot;
+                        button on assistant messages to create files.
                       </div>
                     )}
                   </CommandGroup>
                 </>
               )}
-              
+
               {isLoadingFiles && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Loading markdown files...
@@ -261,38 +282,38 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
           </Command>
         </PopoverContent>
       </Popover>
-      
+
       {/* Markdown Preview Dialog */}
       {selectedMarkdown && (
         <Dialog open={true} onOpenChange={(open) => !open && setSelectedMarkdown(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>
-                Insert Markdown File: {selectedMarkdown.name}
-              </DialogTitle>
+              <DialogTitle>Insert Markdown File: {selectedMarkdown.name}</DialogTitle>
             </DialogHeader>
-            
+
             <div className="max-h-[50vh] overflow-y-auto border rounded-md p-4 bg-muted/20">
               <div className="text-xs text-muted-foreground mb-2">Preview:</div>
-              <pre className="whitespace-pre-wrap text-sm font-mono">{selectedMarkdown.preview.slice(0, 1000)}
-                {selectedMarkdown.preview.length > 1000 ? '...' : ''}
+              <pre className="whitespace-pre-wrap text-sm font-mono">
+                {selectedMarkdown.preview.slice(0, 1000)}
+                {selectedMarkdown.preview.length > 1000 ? "..." : ""}
               </pre>
               {selectedMarkdown.preview.length > 1000 && (
                 <div className="text-xs text-muted-foreground mt-2">
-                  Note: This file is truncated in the preview but will be inserted in full.
+                  Note: This file is truncated in the preview but will be inserted in
+                  full.
                 </div>
               )}
             </div>
-            
+
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setSelectedMarkdown(null)}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="button"
                 onClick={insertMarkdownContent}
                 className="bg-primary"
@@ -303,10 +324,13 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
           </DialogContent>
         </Dialog>
       )}
-      
+
       {/* Arguments Dialog */}
       {promptDialog && (
-        <Dialog open={promptDialog.isOpen} onOpenChange={(open) => !open && setPromptDialog(null)}>
+        <Dialog
+          open={promptDialog.isOpen}
+          onOpenChange={(open) => !open && setPromptDialog(null)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -316,25 +340,26 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                 </span>
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               {promptDialog.args.map((arg) => {
-                const isLongText = arg.description?.includes("multiline") || 
-                                  arg.description?.includes("text area") ||
-                                  arg.name.toLowerCase().includes("content") ||
-                                  arg.name.toLowerCase().includes("description");
-                
+                const isLongText =
+                  arg.description?.includes("multiline") ||
+                  arg.description?.includes("text area") ||
+                  arg.name.toLowerCase().includes("content") ||
+                  arg.name.toLowerCase().includes("description");
+
                 return (
                   <div key={arg.name} className="space-y-2">
                     <Label htmlFor={`arg-${arg.name}`} className="flex items-center">
                       {arg.name}
                       {arg.required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
-                    
+
                     {arg.description && (
                       <p className="text-sm text-muted-foreground">{arg.description}</p>
                     )}
-                    
+
                     {isLongText ? (
                       <Textarea
                         id={`arg-${arg.name}`}
@@ -353,7 +378,7 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                         placeholder={`Enter ${arg.name}...`}
                       />
                     )}
-                    
+
                     {argErrors[arg.name] && (
                       <p className="text-sm text-red-500">{argErrors[arg.name]}</p>
                     )}
@@ -361,20 +386,16 @@ export function SlashPromptButton({ onPromptResult, onContentBubble }: SlashProm
                 );
               })}
             </div>
-            
+
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setPromptDialog(null)}
               >
                 Cancel
               </Button>
-              <Button 
-                type="button"
-                onClick={handleArgSubmit}
-                disabled={isLoadingPrompt}
-              >
+              <Button type="button" onClick={handleArgSubmit} disabled={isLoadingPrompt}>
                 {isLoadingPrompt ? "Executing..." : "Execute"}
               </Button>
             </DialogFooter>
