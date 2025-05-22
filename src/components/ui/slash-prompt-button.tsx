@@ -43,7 +43,7 @@ export function SlashPromptButton({
   const [, setIsLoadingMarkdown] = useState(false);
   const [selectedMarkdown, setSelectedMarkdown] = useState<{
     name: string;
-    preview: string;
+    content: string;
   } | null>(null);
 
   // For prompt arguments dialog
@@ -91,7 +91,7 @@ export function SlashPromptButton({
       // Show preview dialog
       setSelectedMarkdown({
         name: filename,
-        preview: content,
+        content: content,
       });
     } catch (error) {
       console.error("Error loading markdown file:", error);
@@ -101,8 +101,8 @@ export function SlashPromptButton({
 
   const insertMarkdownContent = useCallback(() => {
     if (selectedMarkdown) {
-      // Format the content with metadata
-      const formattedContent = `<!-- From markdown file: ${selectedMarkdown.name} -->\n\n${selectedMarkdown.preview}`;
+      // Insert the full content without reference comments
+      const formattedContent = selectedMarkdown.content;
 
       if (onContentBubble) {
         // Use the content bubble approach
@@ -240,7 +240,7 @@ export function SlashPromptButton({
               {files && (
                 <>
                   {prompts && prompts.length > 0 && <CommandSeparator />}
-                  <CommandGroup heading="Markdown Files (Insert as Reference)">
+                  <CommandGroup heading="Choose the text you want to include">
                     {files.length > 0 ? (
                       files
                         .filter(
@@ -288,16 +288,18 @@ export function SlashPromptButton({
         <Dialog open={true} onOpenChange={(open) => !open && setSelectedMarkdown(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Insert Markdown File: {selectedMarkdown.name}</DialogTitle>
+              <DialogTitle>Insert Complete Markdown: {selectedMarkdown.name}</DialogTitle>
             </DialogHeader>
 
             <div className="max-h-[50vh] overflow-y-auto border rounded-md p-4 bg-muted/20">
-              <div className="text-xs text-muted-foreground mb-2">Preview:</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Preview (full content will be inserted):
+              </div>
               <pre className="whitespace-pre-wrap text-sm font-mono">
-                {selectedMarkdown.preview.slice(0, 1000)}
-                {selectedMarkdown.preview.length > 1000 ? "..." : ""}
+                {selectedMarkdown.content.slice(0, 1000)}
+                {selectedMarkdown.content.length > 1000 ? "..." : ""}
               </pre>
-              {selectedMarkdown.preview.length > 1000 && (
+              {selectedMarkdown.content.length > 1000 && (
                 <div className="text-xs text-muted-foreground mt-2">
                   Note: This file is truncated in the preview but will be inserted in
                   full.
@@ -318,7 +320,7 @@ export function SlashPromptButton({
                 onClick={insertMarkdownContent}
                 className="bg-primary"
               >
-                Insert as Reference
+                Insert Complete Content
               </Button>
             </DialogFooter>
           </DialogContent>
