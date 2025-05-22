@@ -22,6 +22,15 @@ export function ToggleNav({ className }: ToggleNavProps) {
   const isMarkdown = pathname.includes("/mdx-editor");
   const isDrawings = pathname.includes("/drawings");
   const isVectorDB = pathname.includes("/vector-db");
+  
+  // Track current section for animation purposes
+  const [currentSection, setCurrentSection] = useState(() => {
+    if (isChat) return "chat";
+    if (isMarkdown) return "markdown";
+    if (isDrawings) return "drawings";
+    if (isVectorDB) return "vector-db";
+    return "chat"; // default
+  });
 
   const handleToggle = (view: "chat" | "markdown" | "drawings" | "vector-db") => {
     if (
@@ -31,6 +40,8 @@ export function ToggleNav({ className }: ToggleNavProps) {
       (view === "vector-db" && pathname !== "/vector-db")
     ) {
       setIsTransitioning(true);
+      // Update current section before navigation to trigger animation
+      setCurrentSection(view);
       setTimeout(() => {
         if (view === "chat") {
           router.push("/");
@@ -59,8 +70,8 @@ export function ToggleNav({ className }: ToggleNavProps) {
         className="absolute bg-primary z-0 rounded-sm"
         initial={false}
         animate={{
-          top: isChat || isMarkdown ? "4px" : "calc(50% + 2px)",
-          left: isChat || isDrawings ? "4px" : "calc(50% + 2px)",
+          top: (currentSection === "chat" || currentSection === "markdown") ? "4px" : "calc(50% + 2px)",
+          left: (currentSection === "chat" || currentSection === "drawings") ? "4px" : "calc(50% + 2px)",
           width: "calc(50% - 6px)",
           height: "calc(50% - 6px)",
         }}
