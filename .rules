@@ -1,0 +1,22 @@
+# AGENT.md - Guidelines for agentic coding assistants
+
+## Build & Development Commands
+- Build: `pnpm build` (production), `pnpm build:local` (local with NO_HTTPS)
+- Dev server: `pnpm dev` (uses turbopack)
+- Type checking: `pnpm check-types`
+- Lint: `pnpm lint` (next lint + biome), `pnpm lint:fix` (with auto-fix)
+- Format: `pnpm format` (biome formatter)
+- Test: `pnpm test` (run all tests), `pnpm test testname` (run single test)
+
+## Code Style Guidelines
+- TypeScript with strict types (except noImplicitAny: false)
+- Use double quotes for strings (biome standard)
+- 2 space indentation, LF line endings
+- Line width: 90 characters max
+- Imports are auto-organized by biome
+- Use const by default, avoid var
+- Paths aliases available: @/, ui/, app-types/, lib/, logger
+- Error handling: Prefer typed errors with zod validation
+- Naming: camelCase for variables/functions, PascalCase for components/types
+- Components: Use React 19 with function components, hooks pattern
+- State management: Primarily zustand
